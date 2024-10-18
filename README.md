@@ -1,33 +1,120 @@
 # PodNight
 
-# License
+PodNight is a Raspberry Pi-based podcast player that allows you to listen to your favorite podcasts before bed -- helping keep your phone out of the bedroom.
 
-The MIT License (MIT)
+It features two rotary encoders for navigation and volume control, and an OLED display that shows the current podcast episode information. This guide will walk you through how to set up your own PodNight device using a Raspberry Pi Model 2 B, two KY-040 rotary encoders, and a 1.3” OLED display.
 
-Copyright (c) 2024 Andrew Ferguson for Fergcorp, LLC
+## Warning
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+* This is crap code intended as a proof of concept.
+* I used ChatGPT to help write code and documention. There may be errors.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Features 
+* Listen to the latest episode of predefined podcasts. 
+* Control playback and volume with rotary encoders.
+* Automatically fetch the latest podcast episodes using feedparser. 
+* OLED display to show the current episode, volume, and playback state. 
+* Automatic scrolling of long episode titles on the OLED display. 
+* Play, pause, and skip forward/backward functionality. 
+* Mute control using the rotary encoder. 
+* Python-based and set up to run as a systemd service on Raspberry Pi.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Hardware Requirements
+
+* Raspberry Pi Model 2 B (or compatible)
+* Two KY-040 rotary encoders
+* 1.3” OLED display (I2C, SH1106 driver)
+* USB WiFi adapter (if required)
+* Speaker or headphones for audio output
+* * Such as: https://amzn.to/3UebSR5 (affiliate link)
+* Power supply for the Raspberry Pi
+* SD card with Raspberry Pi OS installed
+
+## Pinout Information
+
+Below is the pinout information for wiring the Raspberry Pi Model 2 B to the 1.3" OLED display (I2C) and the two KY-040 rotary encoders. Ensure you double-check connections before powering on your Raspberry Pi to avoid damaging any components.
+
+### **OLED Display (I2C, SH1106) Wiring**
+The OLED display uses the I2C protocol for communication. Connect the display's pins as follows:
+
+| OLED Pin  | Raspberry Pi Pin | GPIO Number | Description |
+|-----------|------------------|-------------|-------------|
+| VCC       | Pin 2 (5V)       | N/A         | Power (5)   |
+| GND       | Pin 20 (GND)     | N/A         | Ground      |
+| SCL       | Pin 5 (GPIO 3)   | GPIO 3 (SCL) | I2C Clock   |
+| SDA       | Pin 3 (GPIO 2)   | GPIO 2 (SDA) | I2C Data    |
+
+### **KY-040 Rotary Encoders Wiring**
+Each KY-040 rotary encoder has five pins: **CLK**, **DT**, **SW** (button), **+** (power), and **GND**.
+
+#### **Rotary Encoder 1 (Podcast Selection & Playback Control)**
+
+| Encoder Pin | Raspberry Pi Pin | GPIO Number | Description        |
+|-------------|------------------|-------------|--------------------|
+| CLK         | Pin 16           | GPIO 23     | Clock signal       |
+| DT          | Pin 18           | GPIO 24     | Data signal        |
+| SW          | Pin 11           | GPIO 17     | Push button switch |
+| +           | Pin 17 (3.3V)    | N/A         | Power (3.3V)       |
+| GND         | Pin 14 (GND)     | N/A         | Ground             |
+
+#### **Rotary Encoder 2 (Volume Control)**
+
+| Encoder Pin | Raspberry Pi Pin | GPIO Number | Description        |
+|-------------|-----------------|-------------|--------------------|
+| CLK         | Pin 8           | GPIO 14     | Clock signal       |
+| DT          | Pin 10          | GPIO 15     | Data signal        |
+| SW          | Pin 7           | GPIO 4      | Push button switch |
+| +           | Pin 1 (3.3V)    | N/A         | Power (3.3V)       |
+| GND         | Pin 9 (GND)     | N/A         | Ground             |
 
 
-# Warning
+If you use a different model of Raspberry Pi, double-check the GPIO pinout as some models may have different pin mappings.
 
-This is crap code intended as a proof of concept
+
+
+## Software Requirements
+
+* Python 3
+
+The following Python libraries:
+* RPi.GPIO
+* feedparser
+* vlc
+* luma.oled
+* Pillow (PIL)
+
+You can install the required Python libraries using pip:
+```bash
+pip3 install RPi.GPIO feedparser python-vlc luma.oled pillow
+```
+
+## Controlling the Device
+
+### Left Rotary Encoder:
+* Rotate to navigate through the list of available podcasts.
+* Press to play/pause the current episode.
+* Rotate while playing to skip forward/backward by 30 seconds.
+### Right Rotary Encoder:
+* Rotate to adjust the volume.
+* Press to mute/unmute the audio.
+
+
+## Customizing Podcast Feeds
+
+To customize which podcasts are available, modify the podcasts array in the podcast_player.py file:
+```python
+podcasts = [
+    {
+        'name': 'Marketplace',
+        'feed_url': 'https://www.marketplace.org/feed/podcast/marketplace/'
+    },
+    {
+        'name': 'Podcast Two',
+        'feed_url': 'https://example.com/podcast2/feed'
+    },
+    # Add more podcasts as needed
+]
+```
 
 # Install as service
 
@@ -92,3 +179,27 @@ Create/edit `/etc/rc.local` to add:
 echo 0 | tee /sys/class/leds/rt2800usb-phy*::assoc/brightness
 exit 0
 ```
+
+# License
+
+The MIT License (MIT)
+
+Copyright (c) 2024 Andrew Ferguson for Fergcorp, LLC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
