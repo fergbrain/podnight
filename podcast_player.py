@@ -17,7 +17,7 @@ from pirotary.rotary_class import RotaryEncoder
 # Initialize I2C interface and SH1106 OLED display
 serial = i2c(port=1, address=0x3C)
 oled = sh1106(serial)
-oled.contrast(50)
+oled.contrast(25)
 
 WIDTH = oled.width
 HEIGHT = oled.height
@@ -46,6 +46,10 @@ status = {
 
 # Define Podcast List
 podcasts = [
+    # {
+    #   'name': "Test",
+    #   'feed_url': 'https://feeds.acast.com/public/shows/dd1906ac-ed6b-4e3c-80eb-c227e19ff5a7'
+    # },
     {
         'name': 'Marketplace',
         'feed_url': 'https://www.marketplace.org/feed/podcast/marketplace/'
@@ -86,13 +90,13 @@ def get_latest_episode(feed_url):
         print(f"Error fetching feed: {e}")
         return None, None
 
+
 def play_podcast(url):
-    global player, is_playing, is_paused, status
+    global player, instance, is_playing, is_paused, status
     with player_lock:
         if player:
             player.stop()
-        instance = vlc.Instance('--input-repeat=-1')
-        player = instance.media_player_new()
+
         media = instance.media_new(url)
         player.set_media(media)
         player.audio_set_volume(volume)
@@ -107,22 +111,27 @@ def play_podcast(url):
         is_paused = False
 
 def pause_podcast():
-    global player, is_paused
+    global player, is_paused, status
     with player_lock:
         if player:
             player.pause()
             is_paused = not is_paused  # Toggle pause state
+            status['state'] = "pause" if is_paused else "play"
 
 def stop_podcast():
-    global player, is_playing, is_paused
+    global player, is_playing, is_paused, status
     with player_lock:
         if player:
             player.stop()
-            player.release()
-            player = None
+            #player.release()
+            # player = None
         is_playing = False
         is_paused = False
+        status['state'] = "stop"
+        status['title'] = ''
         status['elapsed'] = 0
+        status['duration'] = 0
+
 
 def seek_podcast(seconds):
     global player
@@ -240,25 +249,32 @@ def update_display():
 # Initialize Rotary Encoder 1 (Podcast Selection with Push Button)
 def rotary_encoder1_event(event):
     global current_podcast_index, is_playing, status, is_paused
-    if is_playing:
+    if is_playing and not is_paused:
         if event == RotaryEncoder.CLOCKWISE:
             seek_podcast(30)  # Skip forward 30 seconds
         elif event == RotaryEncoder.ANTICLOCKWISE:
             seek_podcast(-30)  # Skip backward 30 seconds
         elif event == RotaryEncoder.BUTTONDOWN:
             pause_podcast()
-            status['state'] = "pause" if is_paused else "play"
+    elif is_playing and is_paused:
+        if event == RotaryEncoder.CLOCKWISE:
+            stop_podcast()
+            current_podcast_index = (current_podcast_index + 1) % len(podcasts)
+            status['name'] = podcasts[current_podcast_index]['name']
+        elif event == RotaryEncoder.ANTICLOCKWISE:
+            stop_podcast()
+            current_podcast_index = (current_podcast_index - 1) % len(podcasts)
+            status['name'] = podcasts[current_podcast_index]['name']
+        elif event == RotaryEncoder.BUTTONDOWN:
+            pause_podcast()
     else:
         if event == RotaryEncoder.CLOCKWISE:
             current_podcast_index = (current_podcast_index + 1) % len(podcasts)
             status['name'] = podcasts[current_podcast_index]['name']
-            print("ENC1_CW")
         elif event == RotaryEncoder.ANTICLOCKWISE:
             current_podcast_index = (current_podcast_index - 1) % len(podcasts)
             status['name'] = podcasts[current_podcast_index]['name']
-            print("ENC1_CCW")
         elif event == RotaryEncoder.BUTTONDOWN:
-            print("ENC1_BTN")
             # Start playback
             podcast = podcasts[current_podcast_index]
             episode_url, episode_title = get_latest_episode(podcast['feed_url'])
@@ -307,6 +323,10 @@ encoder2 = RotaryEncoder(
     callback=rotary_encoder2_event
 )
 
+# Initialize VLC
+instance = vlc.Instance('--input-repeat=-1')
+player = instance.media_player_new()
+
 # Initialize status display
 status['name'] = podcasts[current_podcast_index]['name']
 status['state'] = "stop"
@@ -316,15 +336,16 @@ update_display()
 # Main loop
 try:
     while True:
+        if player:
+            # Playback finished
+            if player.get_state() == vlc.State.Ended:
+                stop_podcast()
         if is_playing and not is_paused:
             # Update elapsed time
             with player_lock:
                 if player:
                     status['elapsed'] = player.get_time() / 1000  # Convert to seconds
-                    if player.get_state() == vlc.State.Ended:
-                        # Playback finished
-                        stop_podcast()
-                        status['state'] = "stop"
+
         update_display()
         time.sleep(0.1)
 except KeyboardInterrupt:
