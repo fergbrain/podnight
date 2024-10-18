@@ -1,0 +1,3 @@
+[submodule "pirotary"]
+	path = pirotary
+	url = https://github.com/bobrathbone/pirotary.git
