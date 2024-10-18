@@ -20,13 +20,16 @@ It features two rotary encoders for navigation and volume control, and an OLED d
 * Python-based and set up to run as a systemd service on Raspberry Pi.
 
 ## Hardware Requirements
+Note: affiliate links are below
 
 * Raspberry Pi Model 2 B (or compatible)
 * Two KY-040 rotary encoders
+* * Such as: [5pcs 360 Degree Rotary Encoder Module KY-040 Brick Sensor Development Board with Push Button](https://amzn.to/3UeKLFA)
 * 1.3” OLED display (I2C, SH1106 driver)
+* * Such as: [MakerFocus 2pcs OLED Display Module I2C 128X64 1.3 Inch Display Module SSD1106 White](https://amzn.to/3NxPpL4)
 * USB WiFi adapter (if required)
 * Speaker or headphones for audio output
-* * Such as: https://amzn.to/3UebSR5 (affiliate link)
+* * Such as: [Philmore Pillow Speaker w/ 6' Cord ](https://amzn.to/3UebSR5)
 * Power supply for the Raspberry Pi
 * SD card with Raspberry Pi OS installed
 
